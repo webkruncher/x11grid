@@ -32,10 +32,7 @@ struct CustomColumn : X11Grid::Column<TestStructure>
 struct CustomRow : X11Grid::Row<TestStructure>
 {
 		CustomRow(X11Grid::GridBase& _grid) : X11Grid::Row<TestStructure>(_grid) {}
-		virtual void update()
-		{
-			X11Grid::Row<TestStructure>::update();
-		}
+		virtual void update() { X11Grid::Row<TestStructure>::update(); }
 };
 
 struct Bubble : X11Grid::Card
