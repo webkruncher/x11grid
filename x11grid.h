@@ -65,7 +65,7 @@ namespace X11Grid
 			: grid(_grid), X(_x), Y(_y),color(0X00FF00),deactivate(false),active(true) {}
 		void operator=(unsigned long _color){color=_color;}
 		void remove(){deactivate=true;}
-		bool update() { return !active; }
+		virtual bool update() { return !active; }
 		virtual void operator()(Pixmap& bitmap)
 		{ 
 			if (deactivate) {color=0X3333; active=false;}
@@ -99,51 +99,52 @@ namespace X11Grid
 		map<unsigned long,Card*> cards;
 	};
 
-	struct Column : map<int,Cell>
+	template <typename DS>
+		struct Column : map<int,typename DS::CellType>
 	{
 		Column(GridBase& _grid,const int _position) : grid(_grid),X(_position) {}
 		Cell& operator[](Point& p)
 		{
-			iterator found(find(p.second));
-			if (found!=end()) return found->second;
-			insert(make_pair<int,Cell>(p.second,Cell(grid,p.first,p.second)));
-			iterator it(find(p.second));
-			if (it==end()) throw runtime_error("Cannot create column");
+			typename DS::ColumnType::iterator found(this->find(p.second));
+			if (found!=this->end()) return found->second;
+			insert(make_pair<int,typename DS::CellType>(p.second,typename DS::CellType(grid,p.first,p.second)));
+			typename DS::ColumnType::iterator it(this->find(p.second));
+			if (it==this->end()) throw runtime_error("Cannot create column");
 			return it->second;
 		}
-		bool update()
+		virtual bool update()
 		{
-			if (empty()) return true;
-			for (iterator it=begin();it!=end();it++) 
+			if (this->empty()) return true;
+			for (typename DS::ColumnType::iterator it=this->begin();it!=this->end();it++) 
 				if (it->second.update()) erase(it);
-			if (empty()) return true;
+			if (this->empty()) return true;
 			return false;
 		}
 		virtual void operator()(Pixmap& bitmap)
-			{ for (iterator it=begin();it!=end();it++) it->second(bitmap); }
+			{ for (typename DS::ColumnType::iterator it=this->begin();it!=this->end();it++) it->second(bitmap); }
 		private:
 		GridBase& grid;
 		const int X;
 	};
 
 	template <typename DS>
-		struct Row : map<int,Column>
+		struct Row : map<int,typename DS::ColumnType>
 	{
 		Row(GridBase& _grid) : grid(_grid) {}
 		virtual void update()
 		{
 			grid.clear();
-			for (iterator it=begin();it!=end();it++) 
-				if (it->second.update()) erase(it);
+			for (typename DS::RowType::iterator it=this->begin();it!=this->end();it++) 
+				if (it->second.update()) this->erase(it);
 		}
 		virtual void operator()(Pixmap& bitmap)
-			{ for (iterator it=begin();it!=end();it++) it->second(bitmap); }
+			{ for (typename DS::RowType::iterator it=this->begin();it!=this->end();it++) it->second(bitmap); }
 		Cell& operator[](Point& p)
 		{
-			iterator found(find(p.first));
-			if (found==end()) insert(make_pair<int,Column>(p.first,Column(grid,p.first)));
-			iterator it(find(p.first));
-			if (it==end()) throw runtime_error("Cannot create row");
+			typename DS::RowType::iterator found(this->find(p.first));
+			if (found==this->end()) insert(make_pair<int,typename DS::ColumnType>(p.first,typename DS::ColumnType(grid,p.first)));
+			typename DS::RowType::iterator it(this->find(p.first));
+			if (it==this->end()) throw runtime_error("Cannot create row");
 			return it->second[p];
 		}
 		private:
@@ -167,7 +168,7 @@ namespace X11Grid
 			}
 			coverup.clear();
 			invalid.insert(Rect(10,100,ScreenWidth-160,140));	
-			DS::RowType::operator()(bitmap); 
+			DS::RowType::operator()(bitmap);
 		}
 		unsigned long updateloop;
 		Rect paint;
@@ -189,7 +190,9 @@ namespace X11Grid
 	{
 		typedef Program ProgramType;
 		typedef Grid<DefaultStructure> GridType;
-		typedef Row<Column> RowType;
+		typedef Column<DefaultStructure> ColumnType;
+		typedef Row<ColumnType> RowType;
+		typedef Cell CellType;
 	};
 
 

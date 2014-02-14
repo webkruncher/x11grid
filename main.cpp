@@ -5,10 +5,33 @@ using namespace X11Methods;
 
 struct TestPattern;
 struct CustomRow;
+struct CustomColumn;
+struct CustomCell;
 struct TestStructure : X11Grid::DefaultStructure
 {
 		typedef TestPattern GridType;
 		typedef CustomRow RowType;
+		typedef CustomColumn ColumnType;
+		typedef CustomCell CellType;
+};
+
+struct CustomCell : X11Grid::Cell
+{
+		CustomCell(X11Grid::GridBase& _grid,const int _x,const int _y)
+			: X11Grid::Cell(_grid,_x,_y) {}
+		virtual void operator()(Pixmap& bitmap)
+		{ 
+			X11Grid::Cell::operator()(bitmap);
+		}
+};
+
+struct CustomColumn : X11Grid::Column<TestStructure>
+{
+		CustomColumn(X11Grid::GridBase& _grid,const int _position) : X11Grid::Column<TestStructure>(_grid,_position) {}
+		virtual bool update()
+		{
+			return X11Grid::Column<TestStructure>::update();
+		}
 };
 
 struct CustomRow : X11Grid::Row<TestStructure>
