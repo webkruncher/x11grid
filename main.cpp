@@ -3,6 +3,22 @@
 using namespace X11Methods;
 #include <math.h>
 
+struct TestPattern;
+struct CustomRow;
+struct TestStructure : X11Grid::DefaultStructure
+{
+		typedef TestPattern GridType;
+		typedef CustomRow RowType;
+};
+
+struct CustomRow : X11Grid::Row<TestStructure>
+{
+		CustomRow(X11Grid::GridBase& _grid) : X11Grid::Row<TestStructure>(_grid) {}
+		virtual void update()
+		{
+			X11Grid::Row<TestStructure>::update();
+		}
+};
 
 struct Bubble : X11Grid::Card
 {
@@ -41,10 +57,10 @@ struct Bubble : X11Grid::Card
 	int X,Y;
 };
 
-struct TestPattern : X11Grid::Grid 
+struct TestPattern : X11Grid::Grid<TestStructure>
 {
 	TestPattern(Display* _display,GC& _gc,const int _ScreenWidth, const int _ScreenHeight)
-		: Grid(_display,_gc,_ScreenWidth,_ScreenHeight), color(0), cx(900), cy(50), r(3),c(0),
+		: X11Grid::Grid<TestStructure>(_display,_gc,_ScreenWidth,_ScreenHeight), color(0), cx(900), cy(50), r(3),c(0),
 		Root(*this,"Root Node"), Dummy(*this,"Dummy"),ping(400,300),side(false),dir(false), flip(false), limit(120), step(4)
 	{ 
 		Root(ping.first,ping.second);
@@ -68,13 +84,14 @@ struct TestPattern : X11Grid::Grid
 		XFillRectangle(display,bitmap,gc,10,100,ScreenWidth-160,40);
 		XSetForeground(display,gc,0X7F7F7F);
 		XDrawString(display,bitmap,gc,20,120,ss.str().c_str(),ss.str().size());
-		Grid::operator()(bitmap);
+		X11Grid::Grid<TestStructure>::operator()(bitmap);
 	}
 	bool side,dir,flip; const int limit,step;
 	pair<int,int> ping,pong;
 	virtual void update() 
 	{
-		X11Grid::Row& grid(*this);
+		//X11Grid::Row& grid(*this);
+		TestStructure::RowType& grid(*this);
 		if ((!pong.first) && (!pong.second)) if (flip) {side=!side; flip=false;} else flip=true;
 		if ( (abs(pong.first)>limit) || (abs(pong.second)>limit) ) dir=!dir;
 		if (side) pong.first+=((dir)?step:-step); else pong.second+=((dir)?step:-step);
@@ -98,7 +115,8 @@ struct TestPattern : X11Grid::Grid
 			grid[p].remove();
 			tests.pop_front();
 		}
-		Row::update();
+		//Row::update();
+		TestStructure::RowType::update();
 		++updateloop;
 	}
 	private:
@@ -116,8 +134,9 @@ struct TestPattern : X11Grid::Grid
 	}
 };
 
+
 int main(int argc,char** argv)
 {
 	KeyMap keys;
-	return X11Grid::x11main<Program,TestPattern>(argc,argv,keys);
+	return X11Grid::x11main<TestStructure>(argc,argv,keys);
 }

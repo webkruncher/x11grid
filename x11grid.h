@@ -49,7 +49,6 @@ namespace X11Grid
 		GridBase() : nextid(0) {}
 		operator const unsigned long () { return ++nextid; }
 		virtual void operator()(const unsigned long color,Pixmap&  bitmap,const int x,const int y) = 0;
-		virtual int operator()(const int x,const int y) = 0;
 		virtual int operator()(Card&,Pixmap&,const int x,const int y) = 0;
 		virtual Cell& operator[](Point& p) = 0;
 		friend ostream& operator<<(ostream&,GridBase&);
@@ -127,10 +126,11 @@ namespace X11Grid
 		const int X;
 	};
 
-	struct Row : map<int,Column>
+	template <typename DS>
+		struct Row : map<int,Column>
 	{
 		Row(GridBase& _grid) : grid(_grid) {}
-		void update()
+		virtual void update()
 		{
 			grid.clear();
 			for (iterator it=begin();it!=end();it++) 
@@ -150,20 +150,32 @@ namespace X11Grid
 		GridBase& grid;
 	};
 
-	struct Grid : Canvas, Row, GridBase
+	template <typename DS>
+		struct Grid : Canvas, DS::RowType, GridBase
 	{
 		Grid(Display* _display,GC& _gc,const int _ScreenWidth, const int _ScreenHeight)
-			: Canvas(_display,_gc,_ScreenWidth,_ScreenHeight), Row(static_cast<GridBase&>(*this)),
+			: Canvas(_display,_gc,_ScreenWidth,_ScreenHeight), DS::RowType(static_cast<GridBase&>(*this)),
 				updateloop(0) {}
 		protected:
-		virtual void operator()(Pixmap& bitmap) ;
+		virtual void update() { }
+		virtual void operator()(Pixmap& bitmap)
+		{ 
+			for (vector<CardCover>::iterator coverit=coverup.begin();coverit!=coverup.end();coverit++)
+			{
+				CardCover& p(*coverit);
+				p.card->cover(display,gc,bitmap,p.color,invalid,p.x,p.y);
+			}
+			coverup.clear();
+			invalid.insert(Rect(10,100,ScreenWidth-160,140));	
+			DS::RowType::operator()(bitmap); 
+		}
 		unsigned long updateloop;
 		Rect paint;
-		virtual void operator()(const unsigned long color,Pixmap&  bitmap,const int x,const int y);
-		virtual int operator()(Card&,Pixmap&,const int x,const int y); 
+		virtual void operator()(const unsigned long color,Pixmap&  bitmap,const int x,const int y) {}
+		virtual int operator()(Card& card,Pixmap& bitmap,const int x,const int y)
+			{ card(bitmap,x,y,display,gc,invalid); }
 		private:
-		virtual int operator()(const int x,const int y) ;
-		virtual Cell& operator[](Point& p) { return Row::operator[](p); }
+		virtual Cell& operator[](Point& p) { return DS::RowType::operator[](p); }
 		virtual void cover(Card* c,unsigned long color,const int x,const int y)
 		{
 			CardCover cover(c,color,x,y);
@@ -172,7 +184,16 @@ namespace X11Grid
 		vector<CardCover> coverup;
 	};
 
-	template <typename P,typename G>
+
+	struct DefaultStructure
+	{
+		typedef Program ProgramType;
+		typedef Grid<DefaultStructure> GridType;
+		typedef Row<Column> RowType;
+	};
+
+
+	template <typename DS>
 		inline int x11main(int argc,char** argv,KeyMap& keys)
 	{
 		XSizeHints displayarea;
@@ -197,8 +218,8 @@ namespace X11Grid
 		stringstream except;
 		try
 		{
-			G canvas(display,gc,displayarea.width, displayarea.height);
-			P program(screen,display,window,gc,NULL,canvas,keys,displayarea.width,displayarea.height);
+			typename DS::GridType canvas(display,gc,displayarea.width, displayarea.height);
+			typename DS::ProgramType program(screen,display,window,gc,NULL,canvas,keys,displayarea.width,displayarea.height);
 			program(argc,argv);
 		}
 		catch(runtime_error& e){except<<"runtime error:"<<e.what();}
