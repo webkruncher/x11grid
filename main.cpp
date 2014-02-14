@@ -26,13 +26,13 @@ struct CustomCell : X11Grid::Cell
 struct CustomColumn : X11Grid::Column<TestStructure>
 {
 		CustomColumn(X11Grid::GridBase& _grid,const int _position) : X11Grid::Column<TestStructure>(_grid,_position) {}
-		virtual bool update() { return X11Grid::Column<TestStructure>::update(); }
+		virtual bool update(const unsigned long updateloop) { return X11Grid::Column<TestStructure>::update(updateloop); }
 };
 
 struct CustomRow : X11Grid::Row<TestStructure>
 {
 		CustomRow(X11Grid::GridBase& _grid) : X11Grid::Row<TestStructure>(_grid) {}
-		virtual void update() { X11Grid::Row<TestStructure>::update(); }
+		virtual void update(const unsigned long updateloop) { X11Grid::Row<TestStructure>::update(updateloop); }
 };
 
 struct Bubble : X11Grid::Card
@@ -129,7 +129,7 @@ struct TestPattern : X11Grid::Grid<TestStructure>
 			grid[p].remove();
 			tests.pop_front();
 		}
-		TestStructure::RowType::update();
+		TestStructure::RowType::update(updateloop);
 		++updateloop;
 	}
 	private:
