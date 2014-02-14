@@ -91,7 +91,7 @@ namespace X11Grid
 			if (cards.empty()) active=false;
 			grid.cover(c,0X3333,X,Y);
 		}
-		private:				
+		protected:				
 		GridBase& grid;
 		const int X,Y;
 		unsigned long color;
@@ -122,7 +122,7 @@ namespace X11Grid
 		}
 		virtual void operator()(Pixmap& bitmap)
 			{ for (typename DS::ColumnType::iterator it=this->begin();it!=this->end();it++) it->second(bitmap); }
-		private:
+		protected:
 		GridBase& grid;
 		const int X;
 	};
@@ -133,7 +133,7 @@ namespace X11Grid
 		Row(GridBase& _grid) : grid(_grid) {}
 		virtual void update()
 		{
-			grid.clear();
+			//grid.clear();
 			for (typename DS::RowType::iterator it=this->begin();it!=this->end();it++) 
 				if (it->second.update()) this->erase(it);
 		}
@@ -147,7 +147,7 @@ namespace X11Grid
 			if (it==this->end()) throw runtime_error("Cannot create row");
 			return it->second[p];
 		}
-		private:
+		protected:
 		GridBase& grid;
 	};
 
@@ -202,8 +202,8 @@ namespace X11Grid
 		XSizeHints displayarea;
 		Display *display(XOpenDisplay(""));
 		int screen(DefaultScreen(display));
-		const unsigned long mybackground(0X3333);
-		const unsigned long myforeground(0X3333);
+		const unsigned long background(0X3333);
+		const unsigned long foreground(0X3333);
 
 		displayarea.x = 000;
 		displayarea.y = 000;
@@ -211,10 +211,10 @@ namespace X11Grid
 		displayarea.height = 1024;
 		displayarea.flags = PPosition | PSize;
 
-		Window window(XCreateSimpleWindow(display,DefaultRootWindow(display), displayarea.x,displayarea.y,displayarea.width,displayarea.height,5,myforeground,mybackground));
+		Window window(XCreateSimpleWindow(display,DefaultRootWindow(display), displayarea.x,displayarea.y,displayarea.width,displayarea.height,5,foreground,background));
 		GC gc(XCreateGC(display,window,0,0));
-		XSetBackground(display,gc,mybackground);
-		XSetForeground(display,gc,myforeground);
+		XSetBackground(display,gc,background);
+		XSetForeground(display,gc,foreground);
 		XSelectInput(display,window,ButtonPressMask|KeyPressMask|ExposureMask);
 		XMapRaised(display,window);
 
