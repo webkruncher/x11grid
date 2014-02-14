@@ -105,7 +105,6 @@ struct TestPattern : X11Grid::Grid<TestStructure>
 	pair<int,int> ping,pong;
 	virtual void update() 
 	{
-		//X11Grid::Row& grid(*this);
 		TestStructure::RowType& grid(*this);
 		if ((!pong.first) && (!pong.second)) if (flip) {side=!side; flip=false;} else flip=true;
 		if ( (abs(pong.first)>limit) || (abs(pong.second)>limit) ) dir=!dir;
@@ -130,7 +129,6 @@ struct TestPattern : X11Grid::Grid<TestStructure>
 			grid[p].remove();
 			tests.pop_front();
 		}
-		//Row::update();
 		TestStructure::RowType::update();
 		++updateloop;
 	}
