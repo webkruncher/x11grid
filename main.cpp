@@ -76,24 +76,32 @@ struct Bubble : X11Grid::Card
 
 struct ColorCurve
 {
-	ColorCurve(X11Grid::GridBase& _grid,double _sx,double _sy) : grid(_grid),sx(_sx), sy(_sy),t(0),c(0) {}
+	ColorCurve(X11Grid::GridBase& _grid,double _sx,double _sy) : grid(_grid),sx(_sx), sy(_sy),t(0),c(0),alive(true) {}
 	void operator()()
 	{
+		if (alive) if (c>=0XFF) {c=0XFF;return;}
+		if (!alive) if (t<150) t=150;
 		t++; 
-		if (t>600) return;
-		if (t<300) c=(log(t)*50);
-		if (t>300) c=300-((log(t-300)*50));
+		double T((t*1000)/300);
+		if (T>1000) return;
+		if (T<500) c=(log(T)*50);
+		if (T>500) c=255-((log(T-500)*50));
 		if (c>255) c=255;
 		if (c<0) c=0;
 		double y=-c;
-		Point p(sx+t,y+sy);
-		grid[p]=0XFF0000;
+		double range(0XFF-0X33);
+		c=((c/0XFF)*range)+0X33;
+		Point p(sx+T,y+sy);
+		const unsigned long C(*this);
+		grid[p]=((C<<8) | C);
 	}
-	operator int (){return floor(c);}
+	operator unsigned long (){return floor(c);}
+	void operator = (bool b){alive=b;}
 	private:
 	X11Grid::GridBase& grid;
 	const double sx,sy;
 	double t,c;
+	bool alive;
 };
 
 struct TestPattern : X11Grid::Grid<TestStructure>
@@ -101,7 +109,7 @@ struct TestPattern : X11Grid::Grid<TestStructure>
 	TestPattern(Display* _display,GC& _gc,const int _ScreenWidth, const int _ScreenHeight)
 		: X11Grid::Grid<TestStructure>(_display,_gc,_ScreenWidth,_ScreenHeight), color(0), cx(900), cy(50), r(3),c(0),
 		Root(*this,"Root Node"), Dummy(*this,"Dummy"),ping(400,300),side(false),dir(false), flip(false), limit(120), step(4),
-		curve(*this,200,600)
+		curve(*this,50,600),updateloop(0)
 	{ 
 		Root(ping.first,ping.second);
 		Dummy(ping.first,ping.second);
@@ -118,7 +126,7 @@ struct TestPattern : X11Grid::Grid<TestStructure>
 		pingpong<<"dir:"<<dir;
 		pingpong<<" side:"<<side;
 		pingpong<<" pong:"<<setw(5)<<pong.first<<","<<setw(5)<<pong.second;
-		sscolor<<" color:"<<(int)curve;
+		sscolor<<" update: "<<updateloop<<" color:"<<(unsigned long)curve;
 		ss<<setw(20)<<left<<ssupdates.str();
 		ss<<setw(40)<<left<<pingpong.str();
 		ss<<setw(40)<<left<<sscolor.str();
@@ -131,9 +139,11 @@ struct TestPattern : X11Grid::Grid<TestStructure>
 	}
 	bool side,dir,flip; const int limit,step;
 	pair<int,int> ping,pong;
+	int updateloop;
 	virtual void update() 
 	{
 		curve();
+		if (updateloop==200) curve=false;
 		TestStructure::RowType& grid(*this);
 		if ((!pong.first) && (!pong.second)) if (flip) {side=!side; flip=false;} else flip=true;
 		if ( (abs(pong.first)>limit) || (abs(pong.second)>limit) ) dir=!dir;
