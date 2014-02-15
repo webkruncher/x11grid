@@ -65,7 +65,7 @@ namespace X11Grid
 			: grid(_grid), X(_x), Y(_y),color(0X00FF00),deactivate(false),active(true) {}
 		void operator=(unsigned long _color){color=_color;}
 		void remove(){deactivate=true;}
-		virtual bool update(const unsigned long) { return !active; }
+		virtual bool update(const unsigned long,const unsigned long) { return !active; }
 		virtual void operator()(Pixmap& bitmap)
 		{ 
 			if (deactivate) {color=0X3333; active=false;}
@@ -112,11 +112,11 @@ namespace X11Grid
 			if (it==this->end()) throw runtime_error("Cannot create column");
 			return it->second;
 		}
-		virtual bool update(const unsigned long updateloop)
+		virtual bool update(const unsigned long updateloop,const unsigned long updaterate)
 		{
 			if (this->empty()) return true;
 			for (typename DS::ColumnType::iterator it=this->begin();it!=this->end();it++) 
-				if (it->second.update(updateloop)) erase(it);
+				if (it->second.update(updateloop,updaterate)) erase(it);
 			if (this->empty()) return true;
 			return false;
 		}
@@ -131,11 +131,11 @@ namespace X11Grid
 		struct Row : map<int,typename DS::ColumnType>
 	{
 		Row(GridBase& _grid) : grid(_grid) {}
-		virtual void update(const unsigned long updateloop)
+		virtual void update(const unsigned long updateloop,const unsigned long updaterate)
 		{
 			//grid.clear();
 			for (typename DS::RowType::iterator it=this->begin();it!=this->end();it++) 
-				if (it->second.update(updateloop)) this->erase(it);
+				if (it->second.update(updateloop,updaterate)) this->erase(it);
 		}
 		virtual void operator()(Pixmap& bitmap)
 			{ for (typename DS::RowType::iterator it=this->begin();it!=this->end();it++) it->second(bitmap); }
