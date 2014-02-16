@@ -24,60 +24,83 @@ namespace X11Methods
 		Rect(const int ulx,const int uly,const int brx,const int bry) 
 			: pair<Point,Point>(make_pair<Point,Point>(Point(ulx,uly),Point(brx,bry))),xpoints(NULL) { }
 		Rect(const Rect& a) : pair<Point,Point>(a),xpoints(NULL) {}
-		virtual ~Rect() {if (xpoints) delete xpoints;}
+		virtual Rect& operator=(const Rect& a) { pair<Point,Point>::operator=(a); /* don't copy points */ }
+		virtual ~Rect() { if (xpoints) delete xpoints; }
 		friend ostream& operator<<(ostream&,const Rect&);
 		virtual ostream& operator<<(ostream& o) const { o<<first<<"/"<<second; return o;}
 		void clear(){first.clear();second.clear();}
-		bool operator<(Rect& r){return true;}
-		operator XPoint& ()
+		bool operator<(const Rect& r)
 		{
-			if (xpoints) delete[] xpoints;
-			xpoints=new XPoint[4];	
-			xpoints[0].x=first.first;
-			xpoints[0].y=first.second;
-			xpoints[1].x=second.first;
-			xpoints[1].y=first.second;
-			xpoints[2].x=second.first;
-			xpoints[2].y=second.second;
-			xpoints[3].x=first.first;
-			xpoints[3].y=second.second;
-			return *xpoints;
+			if (first<r.first) return true;
+			if (second<r.second) return true;
+			return false;
 		}
-		private:
-		XPoint* xpoints;
+		virtual operator XPoint& () = 0;
+		protected:
+		mutable XPoint* xpoints;
 	};
 	inline ostream& operator<<(ostream& o,const Rect& b){return b.operator<<(o);}
 
-	// wip
-	//inline bool operator<(const Rect&_x,const Rect& y)
-	//	{ return (__x.first < __y.first || (!(__y.first < __x.first) && __x.second < __y.second)); }
 
-
-	struct InvalidArea : set<Rect>
+	struct InvalidBase
 	{
-		void reduce()
+		virtual void Fill(Display* display,Pixmap& bitmap,GC& gc) = 0;
+		virtual void Show(Display* display,Pixmap& bitmap,Window& window,GC& gc) {}
+		virtual void Trace(Display* display,Pixmap& bitmap,Window& window,GC& gc,const unsigned long) = 0;
+		virtual void Draw(Display*,Pixmap&,Window&,GC&) = 0;
+		virtual void reduce() = 0;
+		virtual void expose() {}
+		virtual void clear() = 0;
+		//virtual void insert(X11Methods::Rect) = 0;
+	};
+
+	template <typename R>
+		struct InvalidArea : InvalidBase, set<R>
+	{
+		virtual void clear() { set<R>::clear(); }
+		virtual void insert(R r) {set<R>::insert(r); }
+		virtual void reduce() { }
+		virtual void Draw(Display* display,Pixmap& bitmap,Window& window,GC& gc) 
 		{
-			// wip
-			//cout<<"Reduce"<<endl;
-			for (iterator it=begin();it!=end();it++)
+			for (typename set<R>::iterator it=this->begin();it!=this->end();it++)
 			{
-				const Rect& r(*it);
-				//cout<<r<<endl;
-			}
-			//cout<<"----------------"<<endl;
-		}
-		void Fill(Display* display,Pixmap& bitmap,Window& window,GC& gc)
-		{
-			static unsigned long c(10); c++;
-			for (iterator it=begin();it!=end();it++)
-			{
-				const Rect& r(*it);
+				R& r(const_cast<R&>(*it));
+				XPoint& points(r);
 				int x(r.first.first);
 				int y(r.first.second);
 				int w(r.second.first-x);
 				int h(r.second.second-y);
-				XSetForeground(display,gc,c);
+				XCopyArea(display,bitmap,window,gc,x,y,w,h,x,y); 
+			}
+		}
+
+		virtual void Fill(Display* display,Pixmap& bitmap,GC& gc)
+		{
+			for (typename set<R>::iterator it=this->begin();it!=this->end();it++)
+			{
+				R& r(const_cast<R&>(*it));
+				XPoint& points(r);
+				int x(r.first.first-1);
+				int y(r.first.second-1);
+				int w(r.second.first-x+2);
+				int h(r.second.second-y+2);
 				XFillRectangle(display,bitmap,gc,x,y,w,h);
+			}
+		}
+		virtual void Trace(Display* display,Pixmap& bitmap,Window& window,GC& gc,unsigned long color)
+		{
+			for (typename set<R>::iterator it=this->begin();it!=this->end();it++)
+			{
+				color<<=4; if (color==0) color=0XFF;
+				XSetForeground(display,gc,color);
+				R& r(const_cast<R&>(*it));
+				XPoint& points(r);
+				int x(r.first.first-1);
+				int y(r.first.second-1);
+				int w(r.second.first-x+2);
+				int h(r.second.second-y+2);
+				XDrawLines(display, bitmap, gc, &points, 4, CoordModeOrigin);
+				//XFillRectangle(display,bitmap,gc,x,y,w,h);
 				XCopyArea(display,bitmap,window,gc,x,y,w,h,x,y); 
 			}
 		}
@@ -93,11 +116,12 @@ namespace X11Methods
 		virtual bool operator()(KeyMap&) {return true;}
 		virtual void operator()(Pixmap& bitmap) = 0;
 		virtual void update() = 0; 
-		InvalidArea invalid;
+		virtual operator InvalidBase& () = 0;
 		protected:
 		Display* display;
 		GC& gc;
 		const int ScreenWidth,ScreenHeight;
+		private:
 	};
 
 	class Buffer 
@@ -126,18 +150,8 @@ namespace X11Methods
 						{ x=ii*w; y=jj*h; XPutImage(display,bitmap,gc,image,0,0,x,y,w,h); }
 			} else {
 				XSetForeground(display,gc,0X3333);
-				//XFillRectangle(display,bitmap,gc,0,0,ScreenWidth,ScreenHeight);
-
-				for (InvalidArea::iterator it=canvas.invalid.begin();it!=canvas.invalid.end();it++)
-				{
-					const Rect& r(*it);
-					int x(r.first.first);
-					int y(r.first.second);
-					int w(r.second.first-x);
-					int h(r.second.second-y);
-					XFillRectangle(display,bitmap,gc,x,y,w,h);
-				}
-
+				InvalidBase& invalid(canvas);
+				invalid.Fill(display,bitmap,gc);
 			}
 			return bitmap;
 		}
@@ -170,7 +184,7 @@ namespace X11Methods
 				if (when(started)>next) 
 				{
 					canvas(bitmap);
-					canvas.invalid.reduce();
+					InvalidBase& invalid(canvas);
 					draw(bitmap);
 					next=(when(started)+1e1);
 				}
@@ -180,8 +194,7 @@ namespace X11Methods
 					unext=(when(started)+1e2);
 				}
 				if (!events(bitmap)) return ;
-				usleep(1e3);
-				cout.flush();
+				usleep(1e2);
 			}
 		}
 		protected:
@@ -190,19 +203,13 @@ namespace X11Methods
 		KeyMap& keys;
 		virtual void draw(Pixmap& bitmap) 
 		{ 
-			for (InvalidArea::iterator it=canvas.invalid.begin();it!=canvas.invalid.end();it++)
-			{
-				const Rect& r(*it);
-				int x(r.first.first);
-				int y(r.first.second);
-				int w(r.second.first-x);
-				int h(r.second.second-y);
-				XCopyArea(display,bitmap,window,gc,x,y,w,h,x,y); 
-			}
-			//canvas.invalid.Fill(display,bitmap,window,gc);
-			//XCopyArea(display,bitmap,window,gc,0,0,ScreenWidth,ScreenHeight,0,0); 
-			canvas.invalid.clear();
+			InvalidBase& invalid(canvas);
+			invalid.reduce();
+			invalid.Draw(display,bitmap,window,gc);
+			invalid.Show(display,bitmap,window,gc);
+			invalid.clear();
 		}	
+
 		virtual bool events(Pixmap& bitmap,KeyMap& keys) 
 		{ 
 			XEvent& e(keys);
@@ -218,11 +225,9 @@ namespace X11Methods
 			}
 			if (e.type==Expose) 
 			{
+				InvalidBase& invalid(canvas);
 				cout<<"Expose"; cout.flush();
-				canvas(bitmap);
-				canvas.invalid.clear();
-				canvas.invalid.insert(Rect(0,0,ScreenWidth,ScreenHeight));
-				draw(bitmap); 
+				invalid.expose();
 			}
 			return true; 
 		}

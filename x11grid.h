@@ -25,9 +25,9 @@ namespace X11Grid
 	struct Card
 	{
 		Card(const unsigned long _id) : id(_id) {}
-		virtual void operator()(Pixmap& bitmap,const int x,const int y,Display* display,GC& gc,X11Methods::InvalidArea& invalid) = 0;
+		virtual void operator()(Pixmap& bitmap,const int x,const int y,Display* display,GC& gc,X11Methods::InvalidBase& invalid) = 0;
 		operator const unsigned long (){return id;}
-		virtual void cover(Display*,GC&,Pixmap&,unsigned long,X11Methods::InvalidArea& invalid,const int Y,const int Y) = 0;
+		virtual void cover(Display*,GC&,Pixmap&,unsigned long,X11Methods::InvalidBase& invalid,const int Y,const int Y) = 0;
 		protected:
 		const unsigned long id;
 	};
@@ -161,20 +161,25 @@ namespace X11Grid
 		virtual void update() { }
 		virtual void operator()(Pixmap& bitmap)
 		{ 
+			InvalidBase& _invalid(*this);
 			for (vector<CardCover>::iterator coverit=coverup.begin();coverit!=coverup.end();coverit++)
 			{
 				CardCover& p(*coverit);
-				p.card->cover(display,gc,bitmap,p.color,invalid,p.x,p.y);
+				p.card->cover(display,gc,bitmap,p.color,_invalid,p.x,p.y);
 			}
 			coverup.clear();
-			invalid.insert(Rect(10,100,ScreenWidth-160,140));	
+			//_invalid.insert(Rect(10,100,ScreenWidth-160,140));	
 			DS::RowType::operator()(bitmap);
 		}
 		unsigned long updateloop;
-		Rect paint;
+		//Rect paint;
 		virtual void operator()(const unsigned long color,Pixmap&  bitmap,const int x,const int y) {}
 		virtual int operator()(Card& card,Pixmap& bitmap,const int x,const int y)
-			{ card(bitmap,x,y,display,gc,invalid); }
+		{ 
+			InvalidBase& _invalid(*this);
+			card(bitmap,x,y,display,gc,_invalid); 
+		}
+		virtual operator InvalidBase& () = 0;
 		private:
 		virtual Cell& operator[](Point& p) { return DS::RowType::operator[](p); }
 		virtual void cover(Card* c,unsigned long color,const int x,const int y)
@@ -195,6 +200,13 @@ namespace X11Grid
 		typedef Cell CellType;
 	};
 
+	inline void GetScreenSize(Display* display,int& width, int& height)
+	{
+		 Screen* pscr(DefaultScreenOfDisplay(display));
+		 if (!pscr) return;
+		 width=pscr->width;
+		 height=pscr->height;
+	}
 
 	template <typename DS>
 		inline int x11main(int argc,char** argv,KeyMap& keys)
@@ -207,8 +219,8 @@ namespace X11Grid
 
 		displayarea.x = 000;
 		displayarea.y = 000;
-		displayarea.width = 1280;
-		displayarea.height = 1024;
+		GetScreenSize(display,displayarea.width,displayarea.height);
+		cout<<"Area:"<<displayarea.width<<"x"<<displayarea.height<<endl;
 		displayarea.flags = PPosition | PSize;
 
 		Window window(XCreateSimpleWindow(display,DefaultRootWindow(display), displayarea.x,displayarea.y,displayarea.width,displayarea.height,5,foreground,background));

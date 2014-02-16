@@ -15,6 +15,29 @@ struct TestStructure : X11Grid::DefaultStructure
 		typedef CustomCell CellType;
 };
 
+	struct TestRect : X11Methods::Rect
+	{
+		TestRect() {}
+		TestRect(const int ulx,const int uly,const int brx,const int bry) 
+			: Rect(ulx,uly,brx,bry) {}
+		TestRect(const TestRect& a) : X11Methods::Rect(a) {}
+		TestRect& operator=(const TestRect& a) { X11Methods::Rect::operator=(a); }
+		virtual operator XPoint& () 
+		{
+			if (xpoints) delete[] xpoints;
+			xpoints=new XPoint[4];	
+			xpoints[0].x=first.first;
+			xpoints[0].y=first.second;
+			xpoints[1].x=second.first;
+			xpoints[1].y=first.second;
+			xpoints[2].x=second.first;
+			xpoints[2].y=second.second;
+			xpoints[3].x=first.first;
+			xpoints[3].y=second.second;
+			return *xpoints;
+		}
+	};
+
 struct CustomCell : X11Grid::Cell
 {
 		CustomCell(X11Grid::GridBase& _grid,const int _x,const int _y)
@@ -40,24 +63,26 @@ struct CustomRow : X11Grid::Row<TestStructure>
 struct Bubble : X11Grid::Card
 {
 	Bubble(X11Grid::GridBase& _grid,string _text) : grid(_grid), Card(_grid), text(_text) {}
-	virtual void cover(Display* display,GC& gc,Pixmap& bitmap,unsigned long color,X11Methods::InvalidArea& invalid,const int X,const int Y) 
+	virtual void cover(Display* display,GC& gc,Pixmap& bitmap,unsigned long color,X11Methods::InvalidBase& _invalid,const int X,const int Y) 
 	{
-		Rect r(X-50,Y-20,X+50,Y+20);	
+		TestRect r(X-50,Y-20,X+50,Y+20);	
 		XPoint& points(r);
 		XSetForeground(display,gc,color);
 		XFillPolygon(display,bitmap,  gc,&points, 4, Complex, CoordModeOrigin);
+		InvalidArea<TestRect>& invalid(static_cast<InvalidArea<TestRect>&>(_invalid));
 		invalid.insert(r);
 	}
 
-	virtual void operator()(Pixmap& bitmap,const int x,const int y,Display* display,GC& gc,X11Methods::InvalidArea& invalid)
+	virtual void operator()(Pixmap& bitmap,const int x,const int y,Display* display,GC& gc,X11Methods::InvalidBase& _invalid)
 	{
-		Rect r(X-50,Y-20,X+50,Y+20);	
+		TestRect r(X-50,Y-20,X+50,Y+20);	
 		XPoint& points(r);
 		XSetForeground(display,gc,0X0080FF);
 		XFillPolygon(display,bitmap,  gc,&points, 4, Complex, CoordModeOrigin);
 		XSetForeground(display,gc,0X8800FF);
 		stringstream ss; ss<<id<<") "<<text;
 		XDrawString(display,bitmap,gc,X-40,Y,ss.str().c_str(),ss.str().size());
+		InvalidArea<TestRect>& invalid(static_cast<InvalidArea<TestRect>&>(_invalid));
 		invalid.insert(r);
 	}
 	void operator()(int x,int y)
@@ -104,6 +129,8 @@ struct ColorCurve
 	bool alive;
 };
 
+
+
 struct TestPattern : X11Grid::Grid<TestStructure>
 {
 	TestPattern(Display* _display,GC& _gc,const int _ScreenWidth, const int _ScreenHeight)
@@ -114,12 +141,13 @@ struct TestPattern : X11Grid::Grid<TestStructure>
 		Root(ping.first,ping.second);
 		Dummy(ping.first,ping.second);
 	}
+	virtual operator InvalidBase& () {return invalid;}
 	protected:
 	Bubble Root,Dummy;
 	ColorCurve curve;
 	void operator()(Pixmap& bitmap) 
 	{ 
-		paint.clear();
+		//paint.clear();
 		stringstream ss;
 		stringstream ssupdates; ssupdates<<"Update:"<<updateloop;
 		stringstream pingpong,sscolor; 
@@ -175,13 +203,16 @@ struct TestPattern : X11Grid::Grid<TestStructure>
 	unsigned long color;
 	double r,c;
 	int cx,cy;
+	InvalidArea<TestRect> invalid;
 	deque<Point> tests;
 	void operator()(const unsigned long color,Pixmap&  bitmap,const int x,const int y)
 	{
-		Rect r(x-2,y-2,x+2,y+2);	
+		TestRect r(x-2,y-2,x+2,y+2);	
 		XPoint& points(r);
 		XSetForeground(display,gc,color);
 		XFillPolygon(display,bitmap,  gc,&points, 4, Complex, CoordModeOrigin);
+		InvalidBase& _invalidbase(*this);
+		InvalidArea<TestRect>& invalid(static_cast<InvalidArea<TestRect>&>(_invalidbase));
 		invalid.insert(r);
 	}
 };
