@@ -168,11 +168,9 @@ namespace X11Grid
 				p.card->cover(display,gc,bitmap,p.color,_invalid,p.x,p.y);
 			}
 			coverup.clear();
-			//_invalid.insert(Rect(10,100,ScreenWidth-160,140));	
 			DS::RowType::operator()(bitmap);
 		}
 		unsigned long updateloop;
-		//Rect paint;
 		virtual void operator()(const unsigned long color,Pixmap&  bitmap,const int x,const int y) {}
 		virtual int operator()(Card& card,Pixmap& bitmap,const int x,const int y)
 		{ 
@@ -246,6 +244,157 @@ namespace X11Grid
 		XCloseDisplay(display);
 		return 0;
 	}
+
+
+	struct ProximityRectangle : X11Methods::Rect
+	{
+		ProximityRectangle() : x(0), y(0), proxi(false),discard(false) {} 
+		ProximityRectangle(const int _x,const int _y) : x(_x), y(_y), proxi(true),discard(false) {}
+		ProximityRectangle(const int _x,const int _y,const int ulx,const int uly,const int brx,const int bry) 
+			: x(_x), y(_y), X11Methods::Rect(ulx,uly,brx,bry), proxi(false),discard(false) {}
+		ProximityRectangle(const ProximityRectangle& a) : x(a.x),y(a.y), X11Methods::Rect(a),proxi(false),discard(false) {}
+		ProximityRectangle& operator=(const ProximityRectangle& a) { x=a.x; y=a.y; X11Methods::Rect::operator=(a);proxi=false;discard=false; }
+		virtual ~ProximityRectangle() { for (vector<Rect*>::iterator it=subs.begin();it!=subs.end();it++) delete (*it); }
+		bool consumed(bool d) const {if (!d) return discard; discard=d;}
+		void operator()(const ProximityRectangle& e) 
+		{ 
+				//subs.push_back(new ProximityRectangle(r));	
+				ProximityRectangle& r(*this);
+					if (e.first.first<r.first.first) r.first.first=e.first.first;
+					if (e.first.second<r.first.second) r.first.second=e.first.second;
+					if (e.second.first>r.second.first) r.second.first=e.second.first;
+					if (e.second.second>r.second.second) r.second.second=e.second.second;
+		}
+		void zero() { first.first=first.second=0; second.first=second.second=100; }
+		virtual operator XPoint& ()
+		{
+			if (xpoints) delete[] xpoints;
+			xpoints=new XPoint[4];	
+			ProximityRectangle r(*this);
+			if (!subs.empty()) 
+			{
+				for (vector<Rect*>::iterator it=subs.begin();it!=subs.end();it++)
+				{
+					Rect& e(**it);
+					if (e.first.first<r.first.first) r.first.first=e.first.first;
+					if (e.first.second<r.first.second) r.first.second=e.first.second;
+					if (e.second.first>r.second.first) r.second.first=e.second.first;
+					if (e.second.second>r.second.second) r.second.second=e.second.second;
+				}
+			}
+			xpoints[0].x=r.first.first;
+			xpoints[0].y=r.first.second;
+			xpoints[1].x=r.second.first;
+			xpoints[1].y=r.first.second;
+			xpoints[2].x=r.second.first;
+			xpoints[2].y=r.second.second;
+			xpoints[3].x=r.first.first;
+			xpoints[3].y=r.second.second;
+//cout<<"P:"<<r.first<<"x"<<r.second<<endl;
+			return *xpoints;
+		}
+
+		bool lessthan(ProximityRectangle& p)  
+		{
+			if ( !proxi ) return X11Methods::Rect::operator<(p); //const_cast<ProximityRectangle&>(p));
+			if(x<p.x) return true;
+			if (y<p.y) return true;
+			return false;
+		}
+		operator const vector<Point>& () const
+		{
+				neighbors.push_back(Point(x-1,y));
+				neighbors.push_back(Point(x-1,y+1));
+				neighbors.push_back(Point(x-1,y-1));
+				neighbors.push_back(Point(x+1,y));
+				neighbors.push_back(Point(x+1,y+1));
+				neighbors.push_back(Point(x+1,y-1));
+				neighbors.push_back(Point(x,y+1));
+				neighbors.push_back(Point(x,y-1));
+				return neighbors;
+		}
+		private:
+		mutable vector<Point> neighbors;
+		int x,y;
+		bool proxi;
+		mutable bool discard;
+		vector<Rect*> subs;
+	};
+	inline bool operator<(const ProximityRectangle& a,const ProximityRectangle& b)
+	{
+		return const_cast<ProximityRectangle&>(b).lessthan(const_cast<ProximityRectangle&>(a));
+	}
+
+	struct InvalidGrid : InvalidArea<ProximityRectangle>
+	{
+		InvalidGrid() : color(0XF){}
+		void insert(const int x,const int y,ProximityRectangle r) { X11Methods::InvalidArea<ProximityRectangle>::insert(r); }
+		private:
+		unsigned long color;
+		iterator find(const Point& p) 
+		{ 
+			ProximityRectangle tmp(p.first,p.second);
+			return set<ProximityRectangle>::find(tmp);
+		}
+		virtual void Show(Display* display,Pixmap& bitmap,Window& window,GC& gc)
+		{
+			return;
+			XSetForeground(display,gc,0X333333);
+			for (iterator it=begin();it!=end();it++)
+			{
+				ProximityRectangle& r(const_cast<ProximityRectangle&>(*it));
+				XPoint& points(r);
+				int x(r.first.first);
+				int y(r.first.second);
+				int w(r.second.first-x);
+				int h(r.second.second-y);
+				//XFillRectangle(display,bitmap,gc,x,y,w,h);
+			}
+			InvalidArea<ProximityRectangle>::Trace(display,bitmap,window,gc,0XF);
+			
+		}
+		virtual void expose() 
+		{
+			clear();
+			ProximityRectangle i(0,0,0,0,1024,768);//(x-(CW/2)),(y-(CH/2)),(x+(CW/2)),(y+(CH/2)));	
+			insert(0,0,i);
+		}
+		virtual void reduce()
+		{
+			//cout<<"Reducing:"<<setw(4)<<size()<<" ";
+			vector<ProximityRectangle> killset;
+			for (iterator it=begin();it!=end();it++)
+			{
+				ProximityRectangle& r(const_cast<ProximityRectangle&>(*it));
+				//if (r.consumed(false)) continue;
+				//cout<<r<<" ";
+				const vector<Point>& p(r);;
+				for (vector<Point>::const_iterator rit=p.begin();rit!=p.end();rit++)
+				{
+					const Point& P(*rit);
+					iterator found(find(P));
+					if (found!=it)
+						if (found!=end()) 
+						{ 
+							//cout<<" f>"<<(*found)<<" ";
+							r(*found);
+							erase(found);
+						}
+				}
+			}
+			//cout<<endl<<"Reduced:"<<setw(4)<<size()<<" "; 
+			for (iterator it=begin();it!=end();it++)
+			{
+				ProximityRectangle& r(const_cast<ProximityRectangle&>(*it));
+				//cout<<r<<" ";
+			}
+			//cout<<endl; cout.flush();
+		}
+	};
+
+
+
+
 } // X11Grid
 #endif  //KRUNCH_X11_GRID_H
 

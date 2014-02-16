@@ -35,7 +35,20 @@ namespace X11Methods
 			if (second<r.second) return true;
 			return false;
 		}
-		virtual operator XPoint& () = 0;
+		virtual operator XPoint& () 
+		{
+			if (xpoints) delete[] xpoints;
+			xpoints=new XPoint[4];	
+			xpoints[0].x=first.first;
+			xpoints[0].y=first.second;
+			xpoints[1].x=second.first;
+			xpoints[1].y=first.second;
+			xpoints[2].x=second.first;
+			xpoints[2].y=second.second;
+			xpoints[3].x=first.first;
+			xpoints[3].y=second.second;
+			return *xpoints;
+		}
 		protected:
 		mutable XPoint* xpoints;
 	};
