@@ -185,29 +185,29 @@ namespace X11Methods
 			: screen(_screen),display(_display),window(_window),gc(_gc),image(_image),canvas(_canvas),keys(_keys),ScreenWidth(_ScreenWidth),ScreenHeight(_ScreenHeight),buffers(canvas) {}
 		virtual void operator()(int argc,char** argv)
 		{
-			canvas(*this,argc,argv);
-			if (!display) return;
 			const long long started(when());
 			buffers(screen,display,window,gc,image,ScreenWidth,ScreenHeight);
 			long long next(0),unext(0);
 			while (true) 
 			{
-				Buffer& buffer(buffers);
-				Pixmap& bitmap(buffer);
 				if (when(started)>next) 
 				{
+					Buffer& buffer(buffers);
+					Pixmap& bitmap(buffer);
+					canvas(*this,argc,argv);
+					if (!display) return;
 					canvas(bitmap);
 					InvalidBase& invalid(canvas);
 					draw(bitmap);
-					next=(when(started)+1e1);
+					if (!events(bitmap)) return ;
+					next=(when(started)+1e5);
 				}
 				if (when(started)>unext) 
 				{
 					update();
-					unext=(when(started)+1e2);
+					unext=(when(started)+1e7);
 				}
-				if (!events(bitmap)) return ;
-				usleep(1e2);
+				usleep(1e3);
 			}
 		}
 		protected:

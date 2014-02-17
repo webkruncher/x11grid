@@ -221,12 +221,21 @@ namespace X11Grid
 		cout<<"Area:"<<displayarea.width<<"x"<<displayarea.height<<endl;
 		displayarea.flags = PPosition | PSize;
 
+#if 1
 		Window window(XCreateSimpleWindow(display,DefaultRootWindow(display), displayarea.x,displayarea.y,displayarea.width,displayarea.height,5,foreground,background));
 		GC gc(XCreateGC(display,window,0,0));
 		XSetBackground(display,gc,background);
 		XSetForeground(display,gc,foreground);
 		XSelectInput(display,window,ButtonPressMask|KeyPressMask|ExposureMask);
 		XMapRaised(display,window);
+#else
+		Window window(DefaultRootWindow(display));
+		GC gc(XCreateGC(display,window,0,0));
+		//XSetBackground(display,gc,background);
+		//XSetForeground(display,gc,foreground);
+		//XSelectInput(display,window,ButtonPressMask|KeyPressMask|ExposureMask);
+		XMapRaised(display,window);
+#endif
 
 		stringstream except;
 		try
