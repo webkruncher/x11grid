@@ -221,5 +221,5 @@ struct TestPattern : X11Grid::Grid<TestStructure>
 int main(int argc,char** argv)
 {
 	KeyMap keys;
-	return X11Grid::x11main<TestStructure>(argc,argv,keys);
+	return X11Grid::x11main<TestStructure>(argc,argv,keys,0X3333);
 }
