@@ -40,8 +40,8 @@ struct TestStructure : X11Grid::DefaultStructure
 
 struct CustomCell : X11Grid::Cell
 {
-		CustomCell(X11Grid::GridBase& _grid,const int _x,const int _y)
-			: X11Grid::Cell(_grid,_x,_y) {}
+		CustomCell(X11Grid::GridBase& _grid,const int _x,const int _y,unsigned long background)
+			: X11Grid::Cell(_grid,_x,_y,background) {}
 		virtual void operator()(Pixmap& bitmap)
 			{ X11Grid::Cell::operator()(bitmap); }
 };
@@ -114,8 +114,8 @@ struct ColorCurve
 		if (c>255) c=255;
 		if (c<0) c=0;
 		double y=-c;
-		double range(0XFF-0X33);
-		c=((c/0XFF)*range)+0X33;
+		double range(0XFF-0X70);
+		c=((c/0XFF)*range)+0X70;
 		Point p(sx+T,y+sy);
 		const unsigned long C(*this);
 		grid[p]=((C<<8) | C);
@@ -133,8 +133,8 @@ struct ColorCurve
 
 struct TestPattern : X11Grid::Grid<TestStructure>
 {
-	TestPattern(Display* _display,GC& _gc,const int _ScreenWidth, const int _ScreenHeight)
-		: X11Grid::Grid<TestStructure>(_display,_gc,_ScreenWidth,_ScreenHeight), color(0), cx(900), cy(50), r(3),c(0),
+	TestPattern(Display* _display,GC& _gc,const int _ScreenWidth, const int _ScreenHeight,const unsigned long bkcolor)
+		: X11Grid::Grid<TestStructure>(_display,_gc,_ScreenWidth,_ScreenHeight,bkcolor), color(0), cx(900), cy(50), r(3),c(0),
 		Root(*this,"Root Node"), Dummy(*this,"Dummy"),ping(400,300),side(false),dir(false), flip(false), limit(120), step(4),
 		curve(*this,50,600),updateloop(0)
 	{ 
@@ -221,5 +221,5 @@ struct TestPattern : X11Grid::Grid<TestStructure>
 int main(int argc,char** argv)
 {
 	KeyMap keys;
-	return X11Grid::x11main<TestStructure>(argc,argv,keys,0X3333);
+	return X11Grid::x11main<TestStructure>(argc,argv,keys,0X333333);
 }

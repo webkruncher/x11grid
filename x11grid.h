@@ -64,14 +64,14 @@ namespace X11Grid
 
 	struct Cell 
 	{
-		Cell(GridBase& _grid,const int _x,const int _y)
-			: grid(_grid), X(_x), Y(_y),color(0X00FF00),deactivate(false),active(true) {}
+		Cell(GridBase& _grid,const int _x,const int _y,const unsigned long _background)
+			: grid(_grid), X(_x), Y(_y),color(0),background(_background),deactivate(false),active(true) {}
 		void operator=(unsigned long _color){color=_color;}
 		void remove(){deactivate=true;}
 		virtual bool update(const unsigned long,const unsigned long) { return !active; }
 		virtual void operator()(Pixmap& bitmap)
 		{ 
-			if (deactivate) {color=0X3333; active=false;}
+			if (deactivate) {color=background; active=false;}
 			if (!cards.empty()) 
 			{
 				for (map<unsigned long,Card*>::iterator cit=cards.begin();cit!=cards.end();cit++) 
@@ -92,12 +92,12 @@ namespace X11Grid
 			if (it==cards.end()) return;
 			cards.erase(it);
 			if (cards.empty()) active=false;
-			grid.cover(c,0X3333,X,Y);
+			grid.cover(c,background,X,Y);
 		}
 		protected:				
 		GridBase& grid;
 		const int X,Y;
-		unsigned long color;
+		unsigned long color,background;
 		bool deactivate,active;
 		map<unsigned long,Card*> cards;
 	};
@@ -110,7 +110,7 @@ namespace X11Grid
 		{
 			typename DS::ColumnType::iterator found(this->find(p.second));
 			if (found!=this->end()) return found->second;
-			insert(make_pair<int,typename DS::CellType>(p.second,typename DS::CellType(grid,p.first,p.second)));
+			insert(make_pair<int,typename DS::CellType>(p.second,typename DS::CellType(grid,p.first,p.second,0XFFFF00)));
 			typename DS::ColumnType::iterator it(this->find(p.second));
 			if (it==this->end()) throw runtime_error("Cannot create column");
 			return it->second;
@@ -157,10 +157,11 @@ namespace X11Grid
 	template <typename DS>
 		struct Grid : Canvas, DS::RowType, GridBase
 	{
-		Grid(Display* _display,GC& _gc,const int _ScreenWidth, const int _ScreenHeight)
+		Grid(Display* _display,GC& _gc,const int _ScreenWidth, const int _ScreenHeight,const unsigned long _bkcolor)
 			: Canvas(_display,_gc,_ScreenWidth,_ScreenHeight), DS::RowType(static_cast<GridBase&>(*this)),
-				updateloop(0) {}
+				updateloop(0),bkcolor(_bkcolor) {}
 		protected:
+		const unsigned long bkcolor;
 		virtual void update() { }
 		virtual void operator()(Pixmap& bitmap)
 		{ 
@@ -332,8 +333,8 @@ namespace X11Grid
 		Display *display;//(XOpenDisplay(""));
 		display = XOpenDisplay (getenv ("DISPLAY"));
 		int screen(DefaultScreen(display));
-		const unsigned long background(0X3333);
-		const unsigned long foreground(0X3333);
+		const unsigned long background(bkcolor);
+		const unsigned long foreground(bkcolor);
 
 		displayarea.x = 000;
 		displayarea.y = 000;
@@ -384,7 +385,7 @@ namespace X11Grid
 		stringstream except;
 		try
 		{
-			typename DS::GridType canvas(display,gc,displayarea.width, displayarea.height);
+			typename DS::GridType canvas(display,gc,displayarea.width, displayarea.height,bkcolor);
 			typename DS::ProgramType program(screen,display,window,gc,NULL,canvas,keys,displayarea.width,displayarea.height);
 			program(argc,argv);
 		}
@@ -408,7 +409,6 @@ namespace X11Grid
 		ProximityRectangle(const ProximityRectangle& a) : x(a.x),y(a.y), X11Methods::Rect(a),proxi(false),discard(false) {}
 		ProximityRectangle& operator=(const ProximityRectangle& a) { x=a.x; y=a.y; X11Methods::Rect::operator=(a);proxi=false;discard=false; }
 		virtual ~ProximityRectangle() { for (vector<Rect*>::iterator it=subs.begin();it!=subs.end();it++) delete (*it); }
-		bool consumed(bool d) const {if (!d) return discard; discard=d;}
 		void operator()(const ProximityRectangle& e) 
 		{ 
 				//subs.push_back(new ProximityRectangle(r));	
@@ -489,23 +489,7 @@ namespace X11Grid
 			ProximityRectangle tmp(p.first,p.second);
 			return set<ProximityRectangle>::find(tmp);
 		}
-		virtual void Show(Display* display,Pixmap& bitmap,Window& window,GC& gc)
-		{
-			return;
-			XSetForeground(display,gc,0X333333);
-			for (iterator it=begin();it!=end();it++)
-			{
-				ProximityRectangle& r(const_cast<ProximityRectangle&>(*it));
-				XPoint& points(r);
-				int x(r.first.first);
-				int y(r.first.second);
-				int w(r.second.first-x);
-				int h(r.second.second-y);
-				//XFillRectangle(display,bitmap,gc,x,y,w,h);
-			}
-			InvalidArea<ProximityRectangle>::Trace(display,bitmap,window,gc,0XF);
-			
-		}
+		//virtual void Show(Display* display,Pixmap& bitmap,Window& window,GC& gc) { return; }
 		virtual void expose() 
 		{
 			clear();
@@ -514,13 +498,10 @@ namespace X11Grid
 		}
 		virtual void reduce()
 		{
-			//cout<<"Reducing:"<<setw(4)<<size()<<" ";
 			vector<ProximityRectangle> killset;
 			for (iterator it=begin();it!=end();it++)
 			{
 				ProximityRectangle& r(const_cast<ProximityRectangle&>(*it));
-				//if (r.consumed(false)) continue;
-				//cout<<r<<" ";
 				const vector<Point>& p(r);;
 				for (vector<Point>::const_iterator rit=p.begin();rit!=p.end();rit++)
 				{
@@ -529,21 +510,41 @@ namespace X11Grid
 					if (found!=it)
 						if (found!=end()) 
 						{ 
-							//cout<<" f>"<<(*found)<<" ";
 							r(*found);
 							erase(found);
 						}
 				}
 			}
-			//cout<<endl<<"Reduced:"<<setw(4)<<size()<<" "; 
-			for (iterator it=begin();it!=end();it++)
-			{
-				ProximityRectangle& r(const_cast<ProximityRectangle&>(*it));
-				//cout<<r<<" ";
-			}
-			//cout<<endl; cout.flush();
 		}
 	};
+
+
+	struct TestPatternGenerator;
+	struct PatternBase : vector<pair<double,double> >
+	{
+		friend struct TestPatternGenerator;
+		static PatternBase* generate(const int w,const int h);
+		protected:
+		PatternBase(){}
+		virtual void operator()(const int x,const int y) = 0;
+		void push(const double x,const double y){push_back(make_pair<double,double>(x,y));}
+	};
+
+	struct TestPatternGenerator 
+	{
+		TestPatternGenerator(const int _w,const int _h) : w(_w),h(_h),p(NULL) {}
+		virtual ~TestPatternGenerator() {if (p) delete p;}
+		operator PatternBase& ()
+		{
+			if (p) delete p;
+			p=PatternBase::generate(w,h);
+			return *p;
+		}
+		private:
+		const int w,h;
+		PatternBase* p;
+	};
+
 
 
 

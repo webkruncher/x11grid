@@ -161,10 +161,10 @@ namespace X11Methods
 				for (int ii=0;ii<i;ii++)
 					for (int jj=0;jj<j;jj++)
 						{ x=ii*w; y=jj*h; XPutImage(display,bitmap,gc,image,0,0,x,y,w,h); }
-			} else {
-				XSetForeground(display,gc,0X3333);
-				InvalidBase& invalid(canvas);
-				invalid.Fill(display,bitmap,gc);
+//			} else {
+//				XSetForeground(display,gc,0XFFFFFF);
+//				InvalidBase& invalid(canvas);
+//				invalid.Fill(display,bitmap,gc);
 			}
 			return bitmap;
 		}
