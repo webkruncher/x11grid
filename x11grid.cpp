@@ -7,10 +7,10 @@ using namespace X11Grid;
 
 #define NPATTERNS 3 
 
-struct TestPattern : PatternBase
+struct PatternX : PatternBase
 {
 	friend struct PatternBase;
-	private: TestPattern(){}
+	private: PatternX(){}
 	virtual void operator ()(const int w,const int h) 
 	{
 		const int t( (rand()%h)-(rand()%h));
@@ -68,7 +68,7 @@ PatternBase* PatternBase::generate(const int w,const int h)
 	#endif
 	switch(r)
 	{
-		case 0:p=new TestPattern; break;
+		case 0:p=new PatternX; break;
 		case 1:p=new Circles; break;
 		case 2:p=new Sine; break;
 		default: throw string("Invalid pattern index");
