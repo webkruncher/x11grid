@@ -129,6 +129,12 @@ struct ColorCurve
 	bool alive;
 };
 
+  inline void reseed()
+  {
+    struct timespec tp;
+    clock_gettime(CLOCK_MONOTONIC,&tp);
+    tp.tv_nsec; srand(tp.tv_nsec);
+  }
 
 
 struct TestPattern : X11Grid::Grid<TestStructure>
@@ -140,6 +146,21 @@ struct TestPattern : X11Grid::Grid<TestStructure>
 	{ 
 		Root(ping.first,ping.second);
 		Dummy(ping.first,ping.second);
+		for (int z=0;z<5;z++)
+		{
+			reseed();
+			unsigned long color(rand());
+			int accross(ScreenWidth);
+			int down(ScreenHeight);
+			X11Grid::TestPatternGenerator g(accross,down);
+			X11Grid::PatternBase& p(g);
+			for (X11Grid::PatternBase::iterator pit=p.begin();pit!=p.end();pit++)
+			{
+				Point a(pit->first,pit->second);
+				grid[a]=color;
+			}
+			usleep(1e3);
+		}
 	}
 	virtual operator InvalidBase& () {return invalid;}
 	protected:
@@ -181,9 +202,9 @@ struct TestPattern : X11Grid::Grid<TestStructure>
 				if (!color) color=rand()%0XFF;
 				c+=0.1;
 				double radius(r);
-				for (int j=0;j<5;j++)
+				for (int j=0;j<2;j++)
 				{
-					radius+=7;
+					radius+=30;
 					Point a(cx+(cos(c)*radius),cy+(sin(c)*radius));
 					grid[a]=color;
 					tests.push_back(a);

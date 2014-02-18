@@ -5,7 +5,7 @@
 
 using namespace X11Grid;
 
-#define NPATTERNS 3 
+#define NPATTERNS 2 
 
 struct PatternX : PatternBase
 {
@@ -28,11 +28,11 @@ struct Circles : PatternBase
 		const double cx(w/2);
 		const double cy(h/2);
 		double n(0);
-		double r((rand()%10)+5);
-		while (n<360)
+		double r((rand()%20)+5);
+		while (n<100)
 		{
 			push(cx+(sin(n)*r),cy+(cos(n))*r);
-			n+=0.2;
+			n+=0.8;
 		}
 	}
 };
@@ -52,7 +52,7 @@ struct Sine : PatternBase
 			{
 				push(n,cy+(sin(n))*r);
 				push(n,cy+(cos(n))*r);
-				n+=0.8;
+				n+=2;
 			}
 		}
 	}
