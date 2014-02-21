@@ -160,6 +160,7 @@ namespace X11Grid
 		Grid(Display* _display,GC& _gc,const int _ScreenWidth, const int _ScreenHeight,const unsigned long _bkcolor)
 			: Canvas(_display,_gc,_ScreenWidth,_ScreenHeight), DS::RowType(static_cast<GridBase&>(*this)),
 				updateloop(0),bkcolor(_bkcolor) {}
+		virtual Cell& operator[](Point& p) { return DS::RowType::operator[](p); }
 		protected:
 		const unsigned long bkcolor;
 		virtual void update() { }
@@ -183,7 +184,6 @@ namespace X11Grid
 		}
 		virtual operator InvalidBase& () = 0;
 		private:
-		virtual Cell& operator[](Point& p) { return DS::RowType::operator[](p); }
 		virtual void cover(Card* c,unsigned long color,const int x,const int y)
 		{
 			CardCover cover(c,color,x,y);
