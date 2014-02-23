@@ -57,14 +57,17 @@ namespace X11Methods
 
 	struct InvalidBase
 	{
+		InvalidBase() : trace(false) {}
 		virtual void Fill(Display* display,Pixmap& bitmap,GC& gc) = 0;
-		virtual void Show(Display* display,Pixmap& bitmap,Window& window,GC& gc) {}
+		virtual void Show(Display* display,Pixmap& bitmap,Window& window,GC& gc) 
+			{ if (trace) Trace(display,bitmap,window,gc,0XFF); }
 		virtual void Trace(Display* display,Pixmap& bitmap,Window& window,GC& gc,const unsigned long) = 0;
 		virtual void Draw(Display*,Pixmap&,Window&,GC&) = 0;
 		virtual void reduce() = 0;
 		virtual void expose() {}
 		virtual void clear() = 0;
-		//virtual void insert(X11Methods::Rect) = 0;
+		void SetTrace(bool t){trace=t;}
+		protected: bool trace;
 	};
 
 	template <typename R>
@@ -72,6 +75,18 @@ namespace X11Methods
 	{
 		virtual void clear() { set<R>::clear(); }
 		virtual void insert(R r) {set<R>::insert(r); }
+		virtual void expand(R r) 
+		{
+			if (this->empty()) {set<R>::insert(r);  return;}
+			typename set<R>::reverse_iterator last(this->rbegin());
+			if (this->size()>1) throw string("Cannot expand an invalid area with more than one entry");
+			const R& e(*last);
+			if (r.first.first>e.first.first) r.first.first=e.first.first;
+			if (r.first.second>e.first.second) r.first.second=e.first.second;
+			if (r.second.first<e.second.first) r.second.first=e.second.first;
+			if (r.second.second<e.second.second) r.second.second=e.second.second;
+			erase(e); insert(r); 
+		}
 		virtual void reduce() { }
 		virtual void Draw(Display* display,Pixmap& bitmap,Window& window,GC& gc) 
 		{
@@ -205,7 +220,7 @@ namespace X11Methods
 				if (when(started)>unext) 
 				{
 					update();
-					unext=(when(started)+1e7);
+					unext=(when(started)+1e3);
 				}
 				usleep(1e3);
 			}
