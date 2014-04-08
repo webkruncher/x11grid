@@ -35,12 +35,13 @@ namespace X11Methods
 		public:
 		enum Prepesition {none,home,up,down,left,right,in,out};
 		enum KState {normal,shift=1,ctrl=4,alt=8};
-		KeyMap() : quit(false), prepi(none),kstate(normal) {}
-		void clear(){e.type=0;e.xkey.keycode=0;kstate=normal;quit=false;}
+		KeyMap() : prepi(none),kstate(normal) {}
+		void clear(){Character=0;e.type=0;e.xkey.keycode=0;kstate=normal;}
 		operator KState () { return kstate; }
-		operator bool () { return quit; }
+		operator char () { return Character; }
 		virtual void operator=(XEvent& _e)
 		{
+			Character=0;
 			e=_e;
 			((int&)kstate)=e.xkey.state;
 			switch (e.xkey.keycode) 
@@ -52,17 +53,25 @@ namespace X11Methods
 				case  99: prepi=in; 	break;
 				case 105: prepi=out; 	break;
 				case  60: prepi=home;	break;
-				case  24: quit=true;	break;
-				default: break; //cout<<">"<<e.xkey.keycode<<"<"<<endl; 
+				default: 
+				{
+					len = XLookupString(&e.xkey, buf, 0XF, 0, 0);
+					buf[len] = 0;
+					if (len==1) Character=buf[0];
+					break; //cout<<">"<<e.xkey.keycode<<"<"<<endl; 
+				}
 			}
 		}
 		operator Prepesition () { return prepi; }
 		operator XEvent& () { return e;}
 		protected:
 		XEvent e;
-		bool quit;
 		Prepesition  prepi;
 		KState kstate;
+		char Character;
+		private: 
+		char buf[0X10];
+		int len;
 	};
 } // X11Methods
 #endif //X_KRUNCHER_KEYSTROKES_H

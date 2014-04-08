@@ -26,6 +26,7 @@
 */
 #ifndef __X11_METHODS_H__
 #define __X11_METHODS_H__
+#include <X11/cursorfont.h>
 
 namespace X11Methods
 {
@@ -168,6 +169,7 @@ namespace X11Methods
 		virtual void operator()(ApplicationBase&,int argc,char** argv) {}
 		Canvas(Display* _display,GC& _gc,const int _ScreenWidth, const int _ScreenHeight)
 			: display(_display),gc(_gc),ScreenWidth(_ScreenWidth),ScreenHeight(_ScreenHeight) { }
+		virtual bool operator()(XEvent&,KeyMap&) {return true;}
 		virtual bool operator()(KeyMap&) {return true;}
 		virtual void operator()(Pixmap& bitmap) = 0;
 		virtual void update() = 0; 
@@ -219,12 +221,17 @@ namespace X11Methods
 	{
 		friend ostream& operator<<(ostream&,Application&); 
 		ostream& operator<<(ostream& o) { o<<"App->Screen:"<<screen<<", Display"<<display<<" Screen Dimensions:"<<ScreenWidth<<" x "<<ScreenHeight<<endl; return o;	}
+		Cursor cursor;
+		bool Focused;
 		public:
 		operator Window& () { return window;}
 		operator Display* () { return display;}
 		operator Canvas& () { return canvas; }
 		Application(const int _screen,Display* _display,Window& _window,GC& _gc,XImage* _image,Canvas& _canvas,KeyMap& _keys,const int _ScreenWidth,const int _ScreenHeight)
-			: screen(_screen),display(_display),window(_window),gc(_gc),image(_image),canvas(_canvas),keys(_keys),ScreenWidth(_ScreenWidth),ScreenHeight(_ScreenHeight),buffers(canvas) {}
+			: Focused(true), screen(_screen),display(_display),window(_window),gc(_gc),image(_image),canvas(_canvas),keys(_keys),ScreenWidth(_ScreenWidth),ScreenHeight(_ScreenHeight),buffers(canvas) 
+		{
+			cursor = XCreateFontCursor(display, XC_arrow);
+		}
 		virtual void operator()(int argc,char** argv)
 		{
 			const long long started(when());
@@ -269,36 +276,72 @@ namespace X11Methods
 		{ 
 			XEvent& e(keys);
 			if (!e.type) return true;
-			cout<<"Ev>"<<e.type<<"  "<<Expose<<" - ";
+			//cout<<"Ev>"<<e.type<<"  "<<Expose<<" - ";
 			if (e.type==NoExpose) 
 			{
-				cout<<"NoExpose"; cout.flush();
+				//cout<<"NoExpose"; cout.flush();
 			}
 			if (e.type==GraphicsExpose) 
 			{
-				cout<<"GraphicsExpose"; cout.flush();
+				//cout<<"GraphicsExpose"; cout.flush();
 			}
 			if (e.type==Expose) 
 			{
 				InvalidBase& invalid(canvas);
-				cout<<"Expose"; cout.flush();
+				//cout<<"Expose"; cout.flush();
 				invalid.expose();
 			}
 			return true; 
 		}
+
 		virtual bool events(Pixmap& bitmap)
 		{
+			XWindowAttributes attr;
+			XButtonEvent start;
+			if (!XPending(display)) return true;
+			bool ret(true);
 			XEvent e;
-			if (XPending(display)) 
-			{ 
-				XNextEvent(display,&e); 
-				if (e.type==KeyPress) keys=e; else keys.clear();
-				bool ret(events(bitmap,keys)); 
-				XSync(display,True);
-				keys.clear();
-				return ret;
-			} 
-			return true;
+			XNextEvent(display,&e);
+			keys.clear();
+			if (Focused) 
+			{
+					if (e.type==KeyPress) keys=e; 
+					if (!canvas(e,keys)) return false;
+			}
+			{
+
+				if (e.xany.type == LeaveNotify)
+				{
+					XUngrabPointer(display, CurrentTime);
+					Focused=false;
+				}
+
+				if (e.xany.type == EnterNotify)
+				{
+					int grabbed(XGrabPointer(display, window , False, 
+						ButtonPressMask|ButtonReleaseMask|EnterWindowMask|LeaveWindowMask|PointerMotionMask|PointerMotionHintMask|Button1MotionMask|Button2MotionMask|Button3MotionMask|Button4MotionMask|Button5MotionMask|ButtonMotionMask
+						, GrabModeAsync, GrabModeAsync, None, cursor, CurrentTime));
+					Focused=true;
+				}
+
+				if (e.xany.type == FocusOut)
+				{
+					XUngrabPointer(display, CurrentTime);
+					Focused=false;
+				}
+
+				if (e.xany.type == FocusIn)
+				{
+					int grabbed(XGrabPointer(display, window , False, 
+						ButtonPressMask|ButtonReleaseMask|EnterWindowMask|LeaveWindowMask|PointerMotionMask|PointerMotionHintMask|Button1MotionMask|Button2MotionMask|Button3MotionMask|Button4MotionMask|Button5MotionMask|ButtonMotionMask
+						, GrabModeAsync, GrabModeAsync, None, cursor, CurrentTime));
+					Focused=true;
+				}
+
+				if (!Focused) return true;
+
+			}
+			return ret;
 		}
 
 		protected:
@@ -351,8 +394,8 @@ namespace X11Methods
 		virtual bool events(Pixmap& bitmap,KeyMap& keys) 
 		{ 
 			XEvent& e(keys);
-			if (e.type==KeyPress) cout<<"k,"<<e.xkey.keycode<<","<<e.xkey.state<<". ";
-			if (e.type==ButtonPress) cout<<"b,"<<e.xbutton.x<<","<<e.xbutton.y<<". ";
+			if (e.type&KeyPress) cout<<"k,"<<e.xkey.keycode<<","<<e.xkey.state<<". ";
+
 			cout.flush();
 			bool r(canvas(keys));
 			Application::events(bitmap,keys);
