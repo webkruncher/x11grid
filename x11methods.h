@@ -39,6 +39,12 @@ namespace X11Methods
 		Point() {}
 		Point(const int a,const int b) : pair<int,int>(a,b) {}
 		Point(const Point& a) : pair<int,int>(a.first,a.second) {}
+		bool operator<(const Point& n)
+		{
+			const pair<int,int>& a(*this);
+			const pair<int,int>& b(n);
+			return a<b;
+		}
 		friend ostream& operator<<(ostream&,const Point&);
 		virtual ostream& operator<<(ostream& o) const { o<<first<<"x"<<second; return o;}
 		void clear(){first=0;second=0;}
