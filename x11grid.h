@@ -85,6 +85,8 @@ namespace X11Grid
 		virtual void cover(Card*,unsigned long color,const int x,const int y) = 0;
 		private:
 		unsigned long nextid;
+		//virtual bool operator()(XEvent&,KeyMap&) {return true;}
+		virtual bool events(Pixmap& bitmap,KeyMap& keys) {return true;}
 	};
 	inline ostream& operator<<(ostream& o,GridBase& b){return b.operator<<(o);}
 
@@ -215,6 +217,8 @@ namespace X11Grid
 			CardCover cover(c,color,x,y);
 			coverup.push_back(cover);
 		} 
+		virtual bool events(Pixmap& bitmap,KeyMap& keys) {return true;}
+		//virtual bool operator()(XEvent&,KeyMap&) {return true;}
 		vector<CardCover> coverup;
 	};
 

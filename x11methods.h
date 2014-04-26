@@ -175,7 +175,7 @@ namespace X11Methods
 		virtual void operator()(ApplicationBase&,int argc,char** argv) {}
 		Canvas(Display* _display,GC& _gc,const int _ScreenWidth, const int _ScreenHeight)
 			: display(_display),gc(_gc),ScreenWidth(_ScreenWidth),ScreenHeight(_ScreenHeight) { }
-		virtual bool operator()(XEvent&,KeyMap&) {return true;}
+		virtual bool operator()(XEvent&,KeyMap&) {cout<<"Event:"<<endl; cout.flush(); return true;}
 		virtual bool operator()(KeyMap&) {return true;}
 		virtual void operator()(Pixmap& bitmap) = 0;
 		virtual void update() = 0; 
