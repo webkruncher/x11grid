@@ -270,3 +270,4 @@ int main(int argc,char** argv)
 	KeyMap keys;
 	return X11Grid::x11main<TestStructure>(argc,argv,keys,0X333333);
 }
+
