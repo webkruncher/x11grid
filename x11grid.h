@@ -138,7 +138,9 @@ namespace X11Grid
 		{
 			typename DS::ColumnType::iterator found(this->find(p.second));
 			if (found!=this->end()) return found->second;
-			insert(make_pair<int,typename DS::CellType>(p.second,typename DS::CellType(grid,p.first,p.second,0XFFFF00)));
+			//insert(make_pair<int,typename DS::CellType>(p.second,typename DS::CellType(grid,p.first,p.second,0XFFFF00)));
+			pair<int,typename DS::CellType> pp(p.second,typename DS::CellType(grid,p.first,p.second,0XFFFF00));
+			this->insert( pp );
 			typename DS::ColumnType::iterator it(this->find(p.second));
 			if (it==this->end()) throw runtime_error("Cannot create column");
 			return it->second;
@@ -185,7 +187,12 @@ namespace X11Grid
 		Cell& operator[](Point& p)
 		{
 			typename DS::RowType::iterator found(this->find(p.first));
-			if (found==this->end()) insert(make_pair<int,typename DS::ColumnType>(p.first,typename DS::ColumnType(grid,p.first)));
+			if (found==this->end()) 
+			{
+				pair<int,typename DS::ColumnType> pp(p.first,typename DS::ColumnType(grid,p.first));
+				this->insert( pp );
+			}
+			//insert(make_pair<int,typename DS::ColumnType>(p.first,typename DS::ColumnType(grid,p.first)));
 			typename DS::RowType::iterator it(this->find(p.first));
 			if (it==this->end()) throw runtime_error("Cannot create row");
 			return it->second[p];
