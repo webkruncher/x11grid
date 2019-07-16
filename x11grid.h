@@ -146,8 +146,14 @@ namespace X11Grid
 		virtual bool update(const unsigned long updateloop,const unsigned long updaterate)
 		{
 			if (this->empty()) return true;
+			vector< int > kil;
 			for (typename DS::ColumnType::iterator it=this->begin();it!=this->end();it++) 
-				if (it->second.update(updateloop,updaterate)) erase(it);
+				if (it->second.update(updateloop,updaterate)) kil.push_back( it->first );//erase(it);
+			for ( vector< int >::iterator kit=kil.begin();kit!=kil.end();kit++)
+			{
+				typename DS::ColumnType::iterator found(this->find( *kit ));
+				if ( found != this->end() ) this->erase( found );				
+			}
 			if (this->empty()) return true;
 			return false;
 		}
@@ -165,8 +171,14 @@ namespace X11Grid
 		virtual void update(const unsigned long updateloop,const unsigned long updaterate)
 		{
 			//grid.clear();
+			vector< int > kil;
 			for (typename DS::RowType::iterator it=this->begin();it!=this->end();it++) 
-				if (it->second.update(updateloop,updaterate)) this->erase(it);
+				if (it->second.update(updateloop,updaterate)) kil.push_back( it->first ); //this->erase(it);
+			for ( vector< int >::iterator kit=kil.begin();kit!=kil.end();kit++)
+			{
+				typename DS::RowType::iterator found(this->find( *kit ));
+				if ( found != this->end() ) this->erase( found );				
+			}
 		}
 		virtual void operator()(Pixmap& bitmap)
 			{ for (typename DS::RowType::iterator it=this->begin();it!=this->end();it++) it->second(bitmap); }
