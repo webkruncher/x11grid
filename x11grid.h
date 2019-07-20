@@ -32,7 +32,7 @@
 
 #include <vector>
 #include <stdexcept>
-#include <iomanip.h>
+#include <iomanip>
 #include <string>
 #include <sstream>
 #include <map>
@@ -41,6 +41,7 @@
 #include <deque>
 #include <utility>
 #include <X11/Xatom.h>
+#include <stdlib.h>
 
 
 
@@ -56,7 +57,7 @@ namespace X11Grid
 		Card(const unsigned long _id) : id(_id) {}
 		virtual void operator()(Pixmap& bitmap,const int x,const int y,Display* display,GC& gc,X11Methods::InvalidBase& invalid) = 0;
 		operator const unsigned long (){return id;}
-		virtual void cover(Display*,GC&,Pixmap&,unsigned long,X11Methods::InvalidBase& invalid,const int Y,const int Y) = 0;
+		virtual void cover(Display*,GC&,Pixmap&,unsigned long,X11Methods::InvalidBase& invalid,const int X,const int Y) = 0;
 		protected:
 		const unsigned long id;
 	};

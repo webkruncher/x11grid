@@ -27,6 +27,7 @@
 #ifndef __X11_METHODS_H__
 #define __X11_METHODS_H__
 #include <X11/cursorfont.h>
+#include <unistd.h>
 
 namespace X11Methods
 {
@@ -118,7 +119,7 @@ namespace X11Methods
 			if (r.first.second>e.first.second) r.first.second=e.first.second;
 			if (r.second.first<e.second.first) r.second.first=e.second.first;
 			if (r.second.second<e.second.second) r.second.second=e.second.second;
-			erase(e); insert(r); 
+			this->erase(e); this->insert(r); 
 		}
 		virtual void reduce() { }
 		virtual void Draw(Display* display,Pixmap& bitmap,Window& window,GC& gc) 
