@@ -147,6 +147,7 @@ namespace X11Grid
 		}
 		virtual bool update(const unsigned long updateloop,const unsigned long updaterate)
 		{
+cout << "ColumnRate:" << updaterate << endl;
 			if (this->empty()) return true;
 			vector< int > kil;
 			for (typename DS::ColumnType::iterator it=this->begin();it!=this->end();it++) 
@@ -172,6 +173,7 @@ namespace X11Grid
 		Row(GridBase& _grid) : grid(_grid) {}
 		virtual void update(const unsigned long updateloop,const unsigned long updaterate)
 		{
+cout << "RowRate:" << updaterate << endl;
 			//grid.clear();
 			vector< int > kil;
 			for (typename DS::RowType::iterator it=this->begin();it!=this->end();it++) 

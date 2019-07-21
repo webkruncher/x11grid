@@ -257,14 +257,14 @@ namespace X11Methods
 					InvalidBase& invalid(canvas);
 					draw(bitmap);
 					if (!events(bitmap)) return ;
-					next=(when(started)+1e5);
+					next=(when(started)+1e2);
 				}
 				if (when(started)>unext) 
 				{
 					update();
-					unext=(when(started)+1e3);
+					unext=(when(started)+1e2);
 				}
-				usleep(1e3);
+				usleep(1e2);
 			}
 		}
 		protected:
@@ -287,7 +287,7 @@ namespace X11Methods
 			cout<<"Ev>"<<e.type<<"  "<<Expose<<" - ";
 			if (e.type==NoExpose) 
 			{
-				cout<<"NoExpose"; cout.flush();
+				//cout<<"NoExpose"; cout.flush();
 			}
 			if (e.type==GraphicsExpose) 
 			{
@@ -432,7 +432,7 @@ cout<<"k,"<<e.xkey.keycode<<","<<e.xkey.state<<". ";
 			case KeymapNotify: cout << "KeymapNotify" << endl; break;
 			case Expose: cout << "Expose" << endl; break;
 			case GraphicsExpose: cout << "GraphicsExpose" << endl; break;
-			case NoExpose: cout << "NoExpose" << endl; break;
+			case NoExpose: break; //cout << "NoExpose" << endl; break;
 			case VisibilityNotify: cout << "VisibilityNotify" << endl; break;
 			case CreateNotify: cout << "CreateNotify" << endl; break;
 			case DestroyNotify: cout << "DestroyNotify" << endl; break;
