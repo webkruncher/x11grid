@@ -73,6 +73,8 @@ namespace X11Methods
 		char buf[0X10];
 		int len;
 	};
+
+
 } // X11Methods
 #endif //X_KRUNCHER_KEYSTROKES_H
 

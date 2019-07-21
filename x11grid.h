@@ -43,9 +43,9 @@
 #include <X11/Xatom.h>
 
 
-
 #include "keystrokes.h"
 #include "x11methods.h"
+
 namespace X11Grid
 {
 	using namespace std;

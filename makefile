@@ -8,10 +8,10 @@ x11grid: x11grid.a main.o
 x11grid.a: x11grid.o   $(INCS)
 	ar -r -s x11grid.a x11grid.o
 
-x11grid.o: x11grid.cpp  $(INCS)  x11grid.h x11methods.h
+x11grid.o: x11grid.cpp  $(INCS)  x11grid.h x11methods.h keystrokes.h
 	g++ -D BSD -c  -pthread -lstdc++ x11grid.cpp ${INC} 
 
-main.o: main.cpp  $(INCS)  x11grid.h x11methods.h
+main.o: main.cpp  $(INCS)  x11grid.h x11methods.h keystrokes.h
 	g++ -D BSD -c  -pthread -lstdc++ main.cpp ${INC} 
 
 clean:

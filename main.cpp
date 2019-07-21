@@ -113,12 +113,13 @@ struct Bubble : X11Grid::Card
 	}
 	void operator()(int x,int y)
 	{
-			Point b(X,Y);
-			grid[b]-=this;
-			Point p(x,y);
-			grid[p]+=this;
-			X=x; Y=y;
+		Point b(X,Y);
+		grid[b]-=this;
+		Point p(x,y);
+		grid[p]+=this;
+		X=x; Y=y;
 	}
+	void operator = ( const string t ) { text=t; }
 	private:
 	X11Grid::GridBase& grid;
 	string text;
@@ -167,10 +168,11 @@ struct TestPattern : X11Grid::Grid<TestStructure>
 {
 	TestPattern(Display* _display,GC& _gc,const int _ScreenWidth, const int _ScreenHeight,const unsigned long bkcolor)
 		: X11Grid::Grid<TestStructure>(_display,_gc,_ScreenWidth,_ScreenHeight,bkcolor), color(0), cx(900), cy(50), r(3),c(0),
-		Root(*this,"Root Node"), Dummy(*this,"Dummy"),ping(400,300),side(false),dir(false), flip(false), limit(120), step(4),
+		Root(*this,"Root Node"), Dummy(*this,"Dummy"),ping(600,700),side(false),dir(false), flip(false), limit(120), step(4),
 		curve(*this,50,600),updateloop(0)
 	{ 
 		Root(ping.first,ping.second);
+#if 0
 		Dummy(ping.first,ping.second);
 		for (int z=0;z<5;z++)
 		{
@@ -187,6 +189,7 @@ struct TestPattern : X11Grid::Grid<TestStructure>
 			}
 			usleep(1e3);
 		}
+#endif
 	}
 	virtual operator InvalidBase& () {return invalid;}
 	protected:
@@ -206,10 +209,11 @@ struct TestPattern : X11Grid::Grid<TestStructure>
 		ss<<setw(40)<<left<<pingpong.str();
 		ss<<setw(40)<<left<<sscolor.str();
 		ss<<(*this);
+		Root=ss.str();
 		XSetForeground(display,gc,0X2222);
 		XFillRectangle(display,bitmap,gc,10,100,ScreenWidth-160,40);
 		XSetForeground(display,gc,0X7F7F7F);
-		XDrawString(display,bitmap,gc,20,120,ss.str().c_str(),ss.str().size());
+		//XDrawString(display,bitmap,gc,20,120,ss.str().c_str(),ss.str().size());
 		X11Grid::Grid<TestStructure>::operator()(bitmap);
 	}
 	bool side,dir,flip; const int limit,step;
@@ -217,12 +221,14 @@ struct TestPattern : X11Grid::Grid<TestStructure>
 	int updateloop;
 	virtual void update() 
 	{
-		curve();
+		//curve();
 		if (updateloop==200) curve=false;
 		TestStructure::RowType& grid(*this);
 		if ((!pong.first) && (!pong.second)) if (flip) {side=!side; flip=false;} else flip=true;
 		if ( (abs(pong.first)>limit) || (abs(pong.second)>limit) ) dir=!dir;
 		if (side) pong.first+=((dir)?step:-step); else pong.second+=((dir)?step:-step);
+		Root(ping.first+pong.first,ping.second+pong.second);
+#if 0
 		Dummy(ping.first+pong.first,ping.second+pong.second);
 		{
 				if (!color) color=rand()%0XFF;
@@ -243,6 +249,7 @@ struct TestPattern : X11Grid::Grid<TestStructure>
 			grid[p].remove();
 			tests.pop_front();
 		}
+#endif
 		TestStructure::RowType::update(updateloop,50);
 		++updateloop;
 	}
@@ -254,6 +261,7 @@ struct TestPattern : X11Grid::Grid<TestStructure>
 	deque<Point> tests;
 	void operator()(const unsigned long color,Pixmap&  bitmap,const int x,const int y)
 	{
+#if 0
 		TestRect r(x-2,y-2,x+2,y+2);	
 		XPoint& points(r);
 		XSetForeground(display,gc,color);
@@ -261,6 +269,7 @@ struct TestPattern : X11Grid::Grid<TestStructure>
 		InvalidBase& _invalidbase(*this);
 		InvalidArea<TestRect>& invalid(static_cast<InvalidArea<TestRect>&>(_invalidbase));
 		invalid.insert(r);
+#endif
 	}
 };
 

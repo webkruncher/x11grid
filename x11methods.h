@@ -32,6 +32,7 @@ namespace X11Methods
 {
 	using namespace std;
 
+	void DebugEvent( XEvent& );
 	struct ApplicationBase {};
 
 	struct Point : pair<int,int> 
@@ -283,19 +284,19 @@ namespace X11Methods
 		{ 
 			XEvent& e(keys);
 			if (!e.type) return true;
-			//cout<<"Ev>"<<e.type<<"  "<<Expose<<" - ";
+			cout<<"Ev>"<<e.type<<"  "<<Expose<<" - ";
 			if (e.type==NoExpose) 
 			{
-				//cout<<"NoExpose"; cout.flush();
+				cout<<"NoExpose"; cout.flush();
 			}
 			if (e.type==GraphicsExpose) 
 			{
-				//cout<<"GraphicsExpose"; cout.flush();
+				cout<<"GraphicsExpose"; cout.flush();
 			}
 			if (e.type==Expose) 
 			{
 				InvalidBase& invalid(canvas);
-				//cout<<"Expose"; cout.flush();
+				cout<<"Expose"; cout.flush();
 				invalid.expose();
 			}
 			return true; 
@@ -303,12 +304,15 @@ namespace X11Methods
 
 		virtual bool events(Pixmap& bitmap)
 		{
+
 			XWindowAttributes attr;
 			XButtonEvent start;
 			if (!XPending(display)) return true;
+
 			bool ret(true);
 			XEvent e;
 			XNextEvent(display,&e);
+			DebugEvent( e );
 			keys.clear();
 			if (Focused) 
 			{
@@ -401,7 +405,9 @@ namespace X11Methods
 		virtual bool events(Pixmap& bitmap,KeyMap& keys) 
 		{ 
 			XEvent& e(keys);
-			if (e.type&KeyPress) cout<<"k,"<<e.xkey.keycode<<","<<e.xkey.state<<". ";
+			//if (e.type&KeyPress) 
+
+cout<<"k,"<<e.xkey.keycode<<","<<e.xkey.state<<". ";
 
 			cout.flush();
 			bool r(canvas(keys));
@@ -410,6 +416,49 @@ namespace X11Methods
 		}
 	};
 
+	inline void DebugEvent( XEvent& e )
+	{
+		switch ( e.type )
+		{ 
+			case KeyPress: cout << "KeyPress" << endl; break;
+			case KeyRelease: cout << "KeyRelease" << endl; break;
+			case ButtonPress: cout << "ButtonPress" << endl; break;
+			case ButtonRelease: cout << "ButtonRelease" << endl; break;
+			case MotionNotify: cout << "MotionNotify" << endl; break;
+			case EnterNotify: cout << "EnterNotify" << endl; break;
+			case LeaveNotify: cout << "LeaveNotify" << endl; break;
+			case FocusIn: cout << "FocusIn" << endl; break;
+			case FocusOut: cout << "FocusOut" << endl; break;
+			case KeymapNotify: cout << "KeymapNotify" << endl; break;
+			case Expose: cout << "Expose" << endl; break;
+			case GraphicsExpose: cout << "GraphicsExpose" << endl; break;
+			case NoExpose: cout << "NoExpose" << endl; break;
+			case VisibilityNotify: cout << "VisibilityNotify" << endl; break;
+			case CreateNotify: cout << "CreateNotify" << endl; break;
+			case DestroyNotify: cout << "DestroyNotify" << endl; break;
+			case UnmapNotify: cout << "UnmapNotify" << endl; break;
+			case MapNotify: cout << "MapNotify" << endl; break;
+			case MapRequest: cout << "MapRequest" << endl; break;
+			case ReparentNotify: cout << "ReparentNotify" << endl; break;
+			case ConfigureNotify: cout << "ConfigureNotify" << endl; break;
+			case ConfigureRequest: cout << "ConfigureRequest" << endl; break;
+			case GravityNotify: cout << "GravityNotify" << endl; break;
+			case ResizeRequest: cout << "ResizeRequest" << endl; break;
+			case CirculateNotify: cout << "CirculateNotify" << endl; break;
+			case CirculateRequest: cout << "CirculateRequest" << endl; break;
+			case PropertyNotify: cout << "PropertyNotify" << endl; break;
+			case SelectionClear: cout << "SelectionClear" << endl; break;
+			case SelectionRequest: cout << "SelectionRequest" << endl; break;
+			case SelectionNotify: cout << "SelectionNotify" << endl; break;
+			case ColormapNotify: cout << "ColormapNotify" << endl; break;
+			case ClientMessage: cout << "ClientMessage" << endl; break;
+			case MappingNotify: cout << "MappingNotify" << endl; break;
+			case GenericEvent: cout << "GenericEvent" << endl; break;
+			case LASTEvent: cout << "LASTEvent" << endl; break;
+		}
+		cout.flush();
+
+	}	
 } //X11Methods
 #endif //__X11_METHODS_H__
 
