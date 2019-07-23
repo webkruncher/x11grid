@@ -259,7 +259,7 @@ namespace X11Methods
 					if (!events(bitmap)) return ;
 					next=(when(started)+1e2);
 				}
-				if (when(started)>unext) 
+				//if (when(started)>unext) 
 				{
 					update();
 					unext=(when(started)+1e2);
