@@ -247,7 +247,7 @@ namespace X11Methods
 			long long next(0),unext(0);
 			while (true) 
 			{
-				if (when(started)>next) 
+				//if (when(started)>next) 
 				{
 					Buffer& buffer(buffers);
 					Pixmap& bitmap(buffer);
